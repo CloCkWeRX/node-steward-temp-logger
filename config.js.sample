@@ -1,0 +1,8 @@
+config = {
+  "key": "Go get one at https://developer.forecast.io/",
+  "host": "127.0.0.1 or whereever your steward install is",
+  "lat": "-34.849482",
+  "lon": "138.521756"     
+};
+
+module.exports = config;

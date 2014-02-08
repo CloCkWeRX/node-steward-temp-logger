@@ -8,7 +8,8 @@
     }
   , "dependencies"          : {
      "ws"                  : "git://github.com/TheThingSystem/ws.git",
-     "sqlite3": "2.2.0"
+     "sqlite3": "2.2.0",
+     "forecast.io": "0.0.5"
 
     
   }
