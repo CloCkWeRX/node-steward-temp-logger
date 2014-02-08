@@ -56,7 +56,7 @@ var pending_notifications = {};
 
 // Notify humans after 5 minutes, unless some other event beats us
 function notify_humans(text, type) {
-
+  console.log("Queing: " + text);
   if (pending_notifications[type]) {
     clearTimeout(pending_notifications[type]);
   }
@@ -157,11 +157,7 @@ ws_console.onmessage = function(event) {
           });
 
 
-          console.log('https://chart.googleapis.com/chart?cht=lc&chs=200x100&chd=t:' + temps.join(",") + '&chxt=y&chds=a');
-          //
-
-
-
+          // notify_humans('https://chart.googleapis.com/chart?cht=lc&chs=200x100&chd=t:' + temps.join(",") + '&chxt=y&chds=a', 'chart');
         });
       });
 
