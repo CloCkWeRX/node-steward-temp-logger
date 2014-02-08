@@ -1,0 +1,15 @@
+{
+    "name"                  : "node-steward-temp-logger"
+  , "readmeFilename"        : "README.md"
+  , "version"               : "0.0.1"
+  , "private"               : true
+  , "engines"               : {
+      "node"                : ">=0.10.22"
+    }
+  , "dependencies"          : {
+     "ws"                  : "git://github.com/TheThingSystem/ws.git",
+     "sqlite3": "2.2.0"
+
+    
+  }
+}
