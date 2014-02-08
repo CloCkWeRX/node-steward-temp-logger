@@ -8,12 +8,47 @@ var Forecast = require('forecast.io');
 var sqlite3 = require('sqlite3').verbose();
 var fs = require('fs');
 var config = require('./config.js');
-var ws = new WebSocket('ws://' + config.host + ':8887/console');
+var ws_console = new WebSocket('ws://' + config.host + ':8887/console');
 
 
 // https://api.forecast.io/forecast/053099b89f5af1170d940ff4a4d1a20f/-34.849482,138.521756
 function as_celcius(temp) {
   return 5/9 * (temp - 32);
+}
+
+function notify_humans(text) {
+  var ws_manage = new WebSocket('ws://' + config.host + ':8887/manage');
+
+  
+  ws_manage.onopen = function(event) {
+    console.log("Opened websocket to steward.");
+    
+    var json = JSON.stringify({ path      :'/api/v1/actor/perform/device/indicator/nma/text', 
+                                requestID :'1', 
+                                perform   : 'growl',
+                                parameter : JSON.stringify({message: text, priority: 'notice'})
+                              });
+      ws_manage.send(json);
+
+    };
+
+  ws_manage.onmessage = function(event) {
+      console.log("Socket message: " + event.data);
+    ws_manage.close(); 
+    };
+
+    ws_manage.onclose = function(event) {
+      console.log("Socket closed: " + event.wasClean );
+    };
+
+    ws_manage.onerror = function(event) {
+      console.log("Socket error: " + util.inspect(event, { depth: null}));
+      try { 
+      ws_manage.close(); 
+      console.log("Closed websocket.");
+    } catch (ex) {}
+  };
+
 }
 
 var options = {
@@ -31,12 +66,12 @@ db.run("CREATE TABLE IF NOT EXISTS climate_history (id INTEGER PRIMARY KEY, temp
 
 console.log("Created websocket.");
 
-ws.onopen = function(event) {
+ws_console.onopen = function(event) {
 	console.log("Opened websocket to steward.");
 
 };
 
-ws.onmessage = function(event) {
+ws_console.onmessage = function(event) {
   var content = JSON.parse(event.data);
 	var str = JSON.stringify(content, null, 2);
   if (content[".updates"] === undefined) {
@@ -60,15 +95,15 @@ ws.onmessage = function(event) {
 
           // First, determine the trend. Sort of. Lazily. Assuming the data is reguarly collected.
           if (rows[0].temperature > rows[1].temperature) {
-            console.log("Rising from " + rows[1].temperature + " to " + rows[0].temperature);
+            notify_humans("Rising from " + rows[1].temperature + " to " + rows[0].temperature);
           }
 
           if (rows[0].temperature == rows[1].temperature) {
-            console.log("Steady at " + rows[0].temperature);
+            // notify_humans("Steady at " + rows[0].temperature);
           }
 
           if (rows[0].temperature < rows[1].temperature) {
-            console.log("Falling from " + rows[1].temperature + " to " + rows[0].temperature);
+            notify_humans("Falling from " + rows[1].temperature + " to " + rows[0].temperature);
           }
 
           // TODO This should probably push into steward via the simple reporting protocol majigger
@@ -76,13 +111,13 @@ ws.onmessage = function(event) {
             if (err) throw err;
             var outside_temperature = as_celcius(data.currently.temperature);
             if (rows[0].temperature > outside_temperature) {
-              console.log("It's cooler outside: " + outside_temperature);
+              notify_humans("It's cooler outside: " + outside_temperature);
             }
             if (rows[0].temperature == outside_temperature) {
               console.log("It's the same outside: " + outside_temperature);
             }            
             if (rows[0].temperature < outside_temperature) {
-              console.log("It's warmer outside: " + outside_temperature);
+              notify_humans("It's warmer outside: " + outside_temperature);
             }
           });
 
@@ -106,32 +141,15 @@ ws.onmessage = function(event) {
     
   });
   
-	// console.log("Socket message: " + str);
-/*
-  ".updates": [
-    {
-      "whatami": "/device/climate/samsung/control",
-      "whoami": "device/1",
-      "name": "536D61727420412F432837383235414431303344303629",
-      "status": "present",
-      "info": {
-        "hvac": "cool",
-        "power": "on",
-        "goalTemperature": "26",
-        "temperature": 26
-      },
-      "updated": 1391865827223
-    },
 
-*/
 };
 
-ws.onclose = function(event) {
+ws_console.onclose = function(event) {
 	console.log("Socket closed: " + event.wasClean );
   db.close();
 };
 
-ws.onerror = function(event) {
+ws_console.onerror = function(event) {
 	console.log("Socket error: " + util.inspect(event, {depth: null}));
     try { 
 		ws.close (); 
