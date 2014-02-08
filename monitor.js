@@ -38,12 +38,13 @@ ws.onmessage = function(event) {
         stmt.run(update.info.temperature, update.info.goalTemperature, update.name, update.whoami, update.updated);
         // db.all("SELECT rowid AS id, temperature, updated_at FROM climate_history WHERE device_id = '" + update.whoami + '"', function(err, rows) {
         // db.all("SELECT rowid AS id, temperature, updated_at FROM climate_history", function(err, rows) {          
-          db.all("SELECT * FROM climate_history WHERE name = '" + update.name + "' ORDER BY updated_at DESC LIMIT 2", function(err, rows) {
+          db.all("SELECT * FROM climate_history WHERE name = '" + update.name + "' ORDER BY updated_at DESC", function(err, rows) {
 
           if (rows.length < 2) {
             return;
           }
 
+          // First, determine the trend. Sort of. Lazily. Assuming the data is reguarly collected.
           if (rows[0].temperature > rows[1].temperature) {
             console.log("Rising from " + rows[1].temperature + " to " + rows[0].temperature);
           }
@@ -55,8 +56,20 @@ ws.onmessage = function(event) {
           if (rows[0].temperature < rows[1].temperature) {
             console.log("Falling from " + rows[1].temperature + " to " + rows[0].temperature);
           }
+
+          // Then render a temperature chart
+          var temps = [];
+          rows.forEach(function (row) {
+            temps.push(row.temperature);
+          });
+
+          console.log('https://chart.googleapis.com/chart?cht=lc&chs=200x100&chd=t:' + temps.join(",") + '&chxt=y&chds=a');
+          //
+
         });
       });
+
+
     }
     
   });
