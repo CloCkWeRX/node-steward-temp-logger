@@ -16,7 +16,9 @@ function as_celcius(temp) {
   return 5/9 * (temp - 32);
 }
 
-function notify_humans(text) {
+
+function actually_send(text) {
+
   var ws_manage = new WebSocket('ws://' + config.host + ':8887/manage');
 
   
@@ -50,7 +52,19 @@ function notify_humans(text) {
   };
 
 }
+var pending_notifications = {};
 
+// Notify humans after 5 minutes, unless some other event beats us
+function notify_humans(text, type) {
+
+  if (pending_notifications[type]) {
+    clearTimeout(pending_notifications[type]);
+  }
+  
+  pending_notifications[type] = setTimeout(function() {
+    actually_send(text)
+  }, 1000 * 60 * 5);
+}
 var options = {
   APIKey: config.key,
   requestTimeout: 1000
@@ -95,7 +109,10 @@ ws_console.onmessage = function(event) {
 
           // First, determine the trend. Sort of. Lazily. Assuming the data is reguarly collected.
           if (rows[0].temperature > rows[1].temperature) {
-            notify_humans("Rising from " + rows[1].temperature + " to " + rows[0].temperature);
+            notify_humans("Rising from " + rows[1].temperature + " to " + rows[0].temperature, 'inside_warming');
+            if (rows[0].temperature > 28 && update.power == 'off') {
+              notify_humans("Turn on airconditioner", 'turn_on_aircon');
+            }
           }
 
           if (rows[0].temperature == rows[1].temperature) {
@@ -103,21 +120,30 @@ ws_console.onmessage = function(event) {
           }
 
           if (rows[0].temperature < rows[1].temperature) {
-            notify_humans("Falling from " + rows[1].temperature + " to " + rows[0].temperature);
+            notify_humans("Falling from " + rows[1].temperature + " to " + rows[0].temperature, 'inside_cooling');
           }
 
           // TODO This should probably push into steward via the simple reporting protocol majigger
           forecast.get(config.lat, config.lon, function (err, res, data) {
             if (err) throw err;
-            var outside_temperature = as_celcius(data.currently.temperature);
+            var outside_temperature = Math.round(as_celcius(data.currently.temperature));
             if (rows[0].temperature > outside_temperature) {
-              notify_humans("It's cooler outside: " + outside_temperature);
+              notify_humans("It's cooler outside: " + outside_temperature, 'outside_cooling');
+              if (rows[0].temperature >= 25) {               
+                notify_humans("Open house windows", 'open_windows');
+              }
+              if (update.power == 'on') {
+                notify_humans("Turn off airconditioner", 'turn_off_aircon');
+              }            
             }
             if (rows[0].temperature == outside_temperature) {
               console.log("It's the same outside: " + outside_temperature);
             }            
             if (rows[0].temperature < outside_temperature) {
-              notify_humans("It's warmer outside: " + outside_temperature);
+              notify_humans("It's warmer outside: " + outside_temperature, 'outside_warming');
+              if (rows[0].temperature < 15) {
+                notify_humans("Open house windows", 'open_windows');
+              }
             }
           });
 
