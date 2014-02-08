@@ -68,7 +68,7 @@ function notify_humans(text, type) {
 var options = {
   APIKey: config.key,
   requestTimeout: 1000
-},
+};
 
 
 
