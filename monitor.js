@@ -69,7 +69,7 @@ var options = {
   APIKey: config.key,
   requestTimeout: 1000
 },
-forecast = new Forecast(options);
+
 
 
 
@@ -124,6 +124,7 @@ ws_console.onmessage = function(event) {
           }
 
           // TODO This should probably push into steward via the simple reporting protocol majigger
+          forecast = new Forecast(options);
           forecast.get(config.lat, config.lon, function (err, res, data) {
             if (err) throw err;
             var outside_temperature = Math.round(as_celcius(data.currently.temperature));
