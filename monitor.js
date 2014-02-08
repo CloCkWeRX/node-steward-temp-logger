@@ -151,8 +151,11 @@ ws_console.onmessage = function(event) {
           // Then render a temperature chart
           var temps = [];
           rows.forEach(function (row) {
-            temps.push(row.temperature);
+            if (temps.length <= 100) {
+              temps.push(row.temperature);
+            }
           });
+
 
           console.log('https://chart.googleapis.com/chart?cht=lc&chs=200x100&chd=t:' + temps.join(",") + '&chxt=y&chds=a');
           //
